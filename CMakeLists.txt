@@ -62,5 +62,10 @@ target_link_libraries(
     hardware_pio
 )
 
+target_compile_definitions(
+    skytek PUBLIC
+    PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128
+)
+
 pico_add_extra_outputs(skytek)
 

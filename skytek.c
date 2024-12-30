@@ -69,6 +69,8 @@ int main() {
 
     ws2812_program_init(pio, sm, offset, NEOPIXEL_PIN, 800000, false);
 
+    put_pixel(pio, sm, urgb_u32(0x00, 0xFF, 0x00)); // Blue
+
     // // SPI initialisation. This example will use SPI at 1MHz.
     // spi_init(SPI_PORT, 1000*1000);
     // gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
@@ -99,10 +101,7 @@ int main() {
     
     // For more examples of UART use see https://github.com/raspberrypi/pico-examples/tree/master/uart
 
-    // Initialize hash table
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        hashTable[i] = NULL;
-    }
+    skytek_init();
 
     // Insert some key-value pairs
     int value1 = 42;
@@ -129,7 +128,7 @@ int main() {
         //     callback_func();
         // }
 
-        parse_serial_command();
+        skytek_update();
     }
 
     // Free the hash table

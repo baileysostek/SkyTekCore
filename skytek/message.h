@@ -2,10 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Define the number of entries a SkyTek device is allowed to have keyword callbacks registered for.
-// TODO: maybe in the future we dynamically grow this, but feels like a bad idea on a microcontroller with limited resources.
-#define TABLE_SIZE 128
-
 // Define a list of capabilities
 #define SKYTEK_CAPABILTIES "[\"gps\", \"altitude\"]"
 
@@ -34,7 +30,7 @@ typedef struct HashNode {
 } HashNode;
 
 // Define the hash table
-HashNode *hashTable[TABLE_SIZE];
+HashNode *hashTable[MAX_USER_DEFINED_MESSAGE_TYPES];
 
 // Hash function
 unsigned int hash(const char *key) {
@@ -42,7 +38,7 @@ unsigned int hash(const char *key) {
     while (*key) {
         hash = (hash << 5) + *key++;
     }
-    return hash % TABLE_SIZE;
+    return hash % MAX_USER_DEFINED_MESSAGE_TYPES;
 }
 
 // Insert a key-value pair into the hash table
@@ -70,7 +66,7 @@ void *find(const char *key) {
 
 // Free the hash table
 void freeTable() {
-  for (int i = 0; i < TABLE_SIZE; i++) {
+  for (int i = 0; i < MAX_USER_DEFINED_MESSAGE_TYPES; i++) {
     HashNode *node = hashTable[i];
     while (node) {
       HashNode *temp = node;
@@ -121,6 +117,29 @@ void process_serial_command () {
   } else if (strcmp(command_buffer, "capabilities") == 0) {
     // Query response listing all of our capabilities.
     printf("{\"id\":\"%s\",\"uuid\":\"%s\",\"capabilities\":%s}\n", query_uuid_buffer, device_uuid, SKYTEK_CAPABILTIES); // Substitute our capabilities in as a literal array.
+  } else if (strcmp(command_buffer, "help") == 0) {
+    // Determine all of our keys
+    int num_keys = 0;
+    char key_name[32] = {'\0'};
+    for (int i = 0; i < MAX_USER_DEFINED_MESSAGE_TYPES; i++) {
+      HashNode *node = hashTable[i];
+      while (node) {
+        // If this is NOT the first key we have found, add a ','
+        if (num_keys > 0) {
+          strcat(message, ',');
+        }
+        // Append this key to the array of keys we are returning
+        strcat(message, sprintf(key_name, "\"%s\"", node->key));
+        // Check if we have another node in this bucket.
+        node = node->next;
+        // Increment the number of found keys
+        num_keys++;
+      }
+    }
+    // Append the array of keys
+    sprintf(message, "\"messages\":[%s]", message);
+    // Send out the response
+    send_query_response(message);
   } else {
     // If we get here, the requested command does not correspond to one of our built in messages.
     // We should therefore check if we have a registered handler for this kind of message.
